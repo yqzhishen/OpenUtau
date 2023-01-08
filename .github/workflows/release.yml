@@ -1,0 +1,42 @@
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version Number'
+        default: '0.0.0.0'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ 'windows-latest' ]
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: restore x64
+      run: dotnet restore OpenUtau -r win-x64
+
+    - name: build x64
+      run: dotnet publish OpenUtau -c Release -r win-x64 --self-contained true -o bin/win-x64 /p:version=${{ inputs.version }}
+
+    - name: compress x64
+      run: 7z a OpenUtau-x64-${{ inputs.version }}.zip ./bin/win-x64/*
+
+    - name: Upload artifact x64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: OpenUtau-x64-${{ inputs.version }}.zip
+        path: OpenUtau-x64-${{ inputs.version }}.zip
+
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ inputs.version }}
+        files: |
+          OpenUtau-x64-${{ inputs.version }}.zip
+          

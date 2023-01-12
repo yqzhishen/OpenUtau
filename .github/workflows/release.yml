@@ -8,6 +8,7 @@ on:
         type: string
       create-release:
         type: boolean
+        description: "Create Release"
 
 jobs:
   release:
@@ -36,7 +37,7 @@ jobs:
         path: OpenUtau-x64-${{ inputs.version }}.zip
 
     - name: Create release
-      if: ${{ create-release }}
+      if: ${{ inputs.create-release }}
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ inputs.version }}

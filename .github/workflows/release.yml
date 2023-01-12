@@ -27,6 +27,14 @@ jobs:
     - name: build x64
       run: dotnet publish OpenUtau -c Release -r win-x64 --self-contained true -o bin/win-x64 /p:version=${{ inputs.version }}
 
+    #手动添加directml.dll的临时方案
+    - name: add directml.dll
+      uses: carlosperate/download-file-action@v1.0.3
+      with:
+        file-url: https://github.com/xunmengshe/OpenUtau/releases/download/0.0.0.1/DirectML.dll
+        file-name: DirectML.dll
+        location: ./bin/win-x64/
+
     - name: compress x64
       run: 7z a OpenUtau-x64-${{ inputs.version }}.zip ./bin/win-x64/*
 

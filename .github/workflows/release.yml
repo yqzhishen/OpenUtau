@@ -28,7 +28,7 @@ jobs:
       run: dotnet publish OpenUtau -c Release -r win-x64 --self-contained true -o bin/win-x64 /p:version=${{ inputs.version }}
 
     - name: add openutau.plugins.builtin
-      run: copy /y OpenUtau.Plugin.Builtin\\bin\\Release\\netstandard2.1\\OpenUtau.Plugin.Builtin.dll bin\\win-x64
+      run: copy OpenUtau.Plugin.Builtin\bin\Release\netstandard2.1\OpenUtau.Plugin.Builtin.dll -Destination bin\win-x64
 
     #手动添加directml.dll的临时方案
     - name: add directml.dll

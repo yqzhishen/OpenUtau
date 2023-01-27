@@ -39,7 +39,7 @@ jobs:
         location: ./bin/win-x64/
 
     - name: compress x64
-      run: 7z a OpenUtau-x64-${{ inputs.version }}.zip ./bin/win-x64/*
+      run: 7z a OpenUtau-windows-${{ inputs.version }}.zip ./bin/win-x64/*
 
     - name: download vocoder
       uses: carlosperate/download-file-action@v1.0.3
@@ -62,19 +62,19 @@ jobs:
       run: 7z x -o"./bin/win-x64/Vocoders/rhythmizer_zh_opencpop_strict" ./rhythmizer_zh_opencpop_strict.dsvocoder
      
     - name: compress x64 DiffsingerPack
-      run: 7z a OpenUtau-x64-${{ inputs.version }}-DiffsingerPack.zip ./bin/win-x64/*
+      run: 7z a OpenUtau-windows-${{ inputs.version }}-DiffsingerPack.zip ./bin/win-x64/*
      
     - name: Upload artifact x64
       uses: actions/upload-artifact@v1.0.0
       with:
-        name: OpenUtau-x64-${{ inputs.version }}.zip
-        path: OpenUtau-x64-${{ inputs.version }}.zip
+        name: OpenUtau-windows-${{ inputs.version }}.zip
+        path: OpenUtau-windows-${{ inputs.version }}.zip
         
     - name: Upload artifact x64 DiffsingerPack
       uses: actions/upload-artifact@v1.0.0
       with:
-        name: OpenUtau-x64-${{ inputs.version }}-DiffsingerPack.zip
-        path: OpenUtau-x64-${{ inputs.version }}-DiffsingerPack.zip
+        name: OpenUtau-windows-${{ inputs.version }}-DiffsingerPack.zip
+        path: OpenUtau-windows-${{ inputs.version }}-DiffsingerPack.zip
 
     - name: Create release
       if: ${{ inputs.create-release }}
@@ -82,5 +82,5 @@ jobs:
       with:
         tag_name: ${{ inputs.version }}
         files: |
-          OpenUtau-x64-${{ inputs.version }}.zip
-          OpenUtau-x64-${{ inputs.version }}-DiffsingerPack.zip
+          OpenUtau-windows-${{ inputs.version }}.zip
+          OpenUtau-windows-${{ inputs.version }}-DiffsingerPack.zip

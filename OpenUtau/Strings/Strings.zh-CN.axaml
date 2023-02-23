@@ -50,6 +50,7 @@
   <system:String x:Key="exps.caption">表情</system:String>
   <system:String x:Key="exps.defaultvalue">默认值</system:String>
   <system:String x:Key="exps.flag">重采样器flag</system:String>
+  <system:String x:Key="exps.getsuggestions">获取渲染器建议的表情</system:String>
   <system:String x:Key="exps.isflag">是否重采样器flag</system:String>
   <system:String x:Key="exps.maxvalue">最大值</system:String>
   <system:String x:Key="exps.minvalue">最小值</system:String>
@@ -81,6 +82,8 @@
   <system:String x:Key="menu.file">文件</system:String>
   <system:String x:Key="menu.file.exit">退出</system:String>
   <system:String x:Key="menu.file.exportaudio">导出音频</system:String>
+  <system:String x:Key="menu.file.exportds">导出DiffSinger脚本</system:String>
+  <system:String x:Key="menu.file.exportdsto">导出DiffSinger脚本至...</system:String>
   <system:String x:Key="menu.file.exportmidi">导出Midi文件</system:String>
   <system:String x:Key="menu.file.exportmixdown">混缩为Wav文件</system:String>
   <system:String x:Key="menu.file.exportproject">导出工程</system:String>

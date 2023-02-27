@@ -8,6 +8,7 @@ using OpenUtau.Core.Ustx;
 
 namespace OpenUtau.Core.DiffSinger {
     public class DiffSingerScript {
+        public string[] text;
         public string[] ph_seq;
         public int[] noteSeq;
         public double[] phDurMs;
@@ -15,10 +16,16 @@ namespace OpenUtau.Core.DiffSinger {
         public double[] f0_seq;
         public double offsetMs;
         public double[]? gender = null;
+        public double[]? velocity = null;
+
         public DiffSingerScript(RenderPhrase phrase) {
             const float headMs = DiffSingerUtils.headMs;
             const float tailMs = DiffSingerUtils.tailMs;
-            
+
+            text = phrase.notes.Select(n => n.lyric)
+                .Where(s=>!s.StartsWith("+"))
+                .Append("SP")
+                .ToArray();
             ph_seq = phrase.phones
                 .Select(p => p.phoneme)
                 .Append("SP")
@@ -45,8 +52,19 @@ namespace OpenUtau.Core.DiffSinger {
             int tailFrames = (int)(tailMs / frameMs);
             var totalFrames = (int)(phDurMs.Sum() / frameMs);
 
-            f0_seq = DiffSingerUtils.SampleCurve(phrase, phrase.pitches, 0, frameMs, totalFrames, headFrames, tailFrames, 
+            f0_seq = DiffSingerUtils.SampleCurve(phrase, phrase.pitches, 
+                0, frameMs, totalFrames, headFrames, tailFrames, 
                 x => MusicMath.ToneToFreq(x * 0.01));
+
+            var velocityCurve = phrase.curves.FirstOrDefault(curve => curve.Item1 == DiffSingerUtils.VELC);
+            if (velocityCurve != null) {
+                velocity = DiffSingerUtils.SampleCurve(phrase, velocityCurve.Item2, 
+                    0, frameMs, totalFrames, headFrames, tailFrames,
+                    x=>Math.Pow(2, (x - 100) / 100));
+                for (int i = 0; i < velocity.Length; i++) {
+                    f0_seq[i] *= velocity[i];
+                }
+            }
 
             //voicebank specific features
             if(singer != null) {
@@ -77,7 +95,7 @@ namespace OpenUtau.Core.DiffSinger {
     }
 
     public class RawDiffSingerScript {
-        public string text = "AP";
+        public string text;
         public string ph_seq;
         public string note_seq;
         public string note_dur_seq;
@@ -87,10 +105,13 @@ namespace OpenUtau.Core.DiffSinger {
         public string f0_seq;
         public string? gender_timestep = null;
         public string? gender = null;
+        public string? velocity_timestep = null;
+        public string? velocity = null;
         public string input_type = "phoneme";
         public double offset;
 
         public RawDiffSingerScript(DiffSingerScript script) {
+            text = String.Join(" ", script.text);
             ph_seq = String.Join(" ", script.ph_seq);
             note_seq = String.Join(" ", 
                 script.noteSeq
@@ -105,6 +126,11 @@ namespace OpenUtau.Core.DiffSinger {
             if(script.gender != null) {
                 gender_timestep = f0_timestep;
                 gender = String.Join(" ", script.gender.Select(x => x.ToString("f3")));
+            }
+
+            if (script.velocity != null) {
+                velocity_timestep = f0_timestep;
+                velocity = String.Join(" ", script.velocity.Select(x => x.ToString("f3")));
             }
         }
     }

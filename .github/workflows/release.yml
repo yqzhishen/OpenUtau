@@ -72,6 +72,7 @@ jobs:
       run: 7z x -o"./bin/${{ matrix.os.arch }}/Vocoders/rhythmizer_zh_opencpop_strict" ./rhythmizer_zh_opencpop_strict.dsvocoder
      
     - name: compress x64 DiffsingerPack
+      if: ${{ matrix.os.arch == 'win-x64' }}
       run: 7z a OpenUtau-${{ matrix.os.arch }}-${{ inputs.version }}-DiffsingerPack.zip ./bin/${{ matrix.os.arch }}/*
      
     - name: Upload artifact x64
@@ -81,16 +82,24 @@ jobs:
         path: OpenUtau-${{ matrix.os.arch }}-${{ inputs.version }}.zip
         
     - name: Upload artifact x64 DiffsingerPack
+      if: ${{ matrix.os.arch == 'win-x64' }}
       uses: actions/upload-artifact@v1.0.0
       with:
         name: OpenUtau-${{ matrix.os.arch }}-${{ inputs.version }}-DiffsingerPack.zip
         path: OpenUtau-${{ matrix.os.arch }}-${{ inputs.version }}-DiffsingerPack.zip
 
-    - name: Create release
+    - name: Create release and upload artifact
       if: ${{ inputs.create-release }}
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ inputs.version }}
         files: |
           OpenUtau-${{ matrix.os.arch }}-${{ inputs.version }}.zip
+    
+    - name: Create release and upload artifact DiffsingerPack
+      if: ${{ inputs.create-release && matrix.os.arch == 'win-x64' }}
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ inputs.version }}
+        files: |
           OpenUtau-${{ matrix.os.arch }}-${{ inputs.version }}-DiffsingerPack.zip

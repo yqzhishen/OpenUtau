@@ -12,34 +12,39 @@ on:
 
 jobs:
   release:
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os.runs-on }}
 
     strategy:
       matrix:
-        os: [ 'windows-latest' ]
+        os: 
+          - runs-on: windows-latest
+            arch: win-x64
+          - runs-on: macos-latest
+            arch: osx-x64
 
     steps:
     - uses: actions/checkout@v1
 
     - name: restore x64
-      run: dotnet restore OpenUtau -r win-x64
+      run: dotnet restore OpenUtau -r ${{ matrix.os.arch }}
 
     - name: build x64
-      run: dotnet publish OpenUtau -c Release -r win-x64 --self-contained true -o bin/win-x64 /p:version=${{ inputs.version }}
+      run: dotnet publish OpenUtau -c Release -r ${{ matrix.os.arch }} --self-contained true -o bin/${{ matrix.os.arch }} /p:version=${{ inputs.version }}
 
     - name: add openutau.plugins.builtin
-      run: copy OpenUtau.Plugin.Builtin\bin\Release\netstandard2.1\OpenUtau.Plugin.Builtin.dll -Destination bin\win-x64
+      run: copy OpenUtau.Plugin.Builtin\bin\Release\netstandard2.1\OpenUtau.Plugin.Builtin.dll -Destination bin\${{ matrix.os.arch }}
 
     #手动添加directml.dll的临时方案
     - name: add directml.dll
+      if: ${{ matrix.os.arch == 'win-x64' }}
       uses: carlosperate/download-file-action@v1.0.3
       with:
         file-url: https://github.com/xunmengshe/OpenUtau/releases/download/0.0.0.1/DirectML.dll
         file-name: DirectML.dll
-        location: ./bin/win-x64/
+        location: ./bin/${{ matrix.os.arch }}/
 
     - name: compress x64
-      run: 7z a OpenUtau-windows-${{ inputs.version }}.zip ./bin/win-x64/*
+      run: 7z a OpenUtau-windows-${{ inputs.version }}.zip ./bin/${{ matrix.os.arch }}/*
 
     - name: download vocoder
       uses: carlosperate/download-file-action@v1.0.3
@@ -49,7 +54,7 @@ jobs:
         location: ./
         
     - name: extract vocoder
-      run: 7z x -o"./bin/win-x64/Vocoders/nsf_hifigan" ./nsf_hifigan.dsvocoder
+      run: 7z x -o"./bin/${{ matrix.os.arch }}/Vocoders/nsf_hifigan" ./nsf_hifigan.dsvocoder
         
     - name: download rhythmizer
       uses: carlosperate/download-file-action@v1.0.3
@@ -59,10 +64,10 @@ jobs:
         location: ./
     
     - name: extract rhythmizer
-      run: 7z x -o"./bin/win-x64/Vocoders/rhythmizer_zh_opencpop_strict" ./rhythmizer_zh_opencpop_strict.dsvocoder
+      run: 7z x -o"./bin/${{ matrix.os.arch }}/Vocoders/rhythmizer_zh_opencpop_strict" ./rhythmizer_zh_opencpop_strict.dsvocoder
      
     - name: compress x64 DiffsingerPack
-      run: 7z a OpenUtau-windows-${{ inputs.version }}-DiffsingerPack.zip ./bin/win-x64/*
+      run: 7z a OpenUtau-windows-${{ inputs.version }}-DiffsingerPack.zip ./bin/${{ matrix.os.arch }}/*
      
     - name: Upload artifact x64
       uses: actions/upload-artifact@v1.0.0

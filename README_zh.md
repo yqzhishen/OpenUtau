@@ -18,6 +18,7 @@ OpenUtau For DiffSinger支持Windows和MacOS操作系统。请前往[Release页�
 在使用过程中如果遇到bug，欢迎通过以下方式向我们提交反馈：
 - [在Github上反馈](https://github.com/xunmengshe/OpenUtau/issues/new?assignees=&labels=&template=bug-report.yml)
 - [Discord频道](https://discord.gg/JtKYyZgmGt)
+
 在反馈时，建议提供发生 bug 时的 OpenUtau 窗口完整截图、.ustx工程文件，以及 OpenUtau 日志文件。
 
 ## 相关链接

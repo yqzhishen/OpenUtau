@@ -1,7 +1,7 @@
 # OpenUtau For DiffSinger
 **English** | [简体中文](README_zh.md)
 
-DiffSinger is an open-source singing voice synthesizer based on machine learning. Anyone can record their singing audio make their own DiffSinger voicebank. In this fork of OpenUtau, DiffSinger was added as a renderer.
+DiffSinger is an open-source singing voice synthesizer based on machine learning. Anyone can record their singing voice and make their own DiffSinger voicebank. This fork provides a DiffSinger renderer for OpenUtau, an open source singing voice synthesis GUI editor.
 
 ## Download
 OpenUtau For DiffSinger supports Windows and MacOS. Please go to [Release Page](https://github.com/xunmengshe/OpenUtau/releases) and download the correct package for your operating system.

@@ -29,6 +29,7 @@ jobs:
       uses: justalemon/VersionPatcher@master
       with:
         version: ${{ inputs.version }}
+        csproj-files: "*.csproj"
 
     - name: restore x64
       run: dotnet restore OpenUtau -r ${{ matrix.os.arch }}

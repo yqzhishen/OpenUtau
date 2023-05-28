@@ -25,8 +25,10 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     
-    - name: versioning
-      run: git tag build/${{ inputs.version }}
+    - name: Patch Versions
+      uses: justalemon/VersionPatcher@master
+      with:
+        version: ${{ inputs.version }}
 
     - name: restore x64
       run: dotnet restore OpenUtau -r ${{ matrix.os.arch }}

@@ -39,6 +39,7 @@ namespace OpenUtau.Core.DiffSinger {
         public DsConfig dsConfig;
         public InferenceSession acousticSession = null;
         public DsVocoder vocoder = null;
+        public DsPitch pitchGenerator = null;
         public NDArray speakerEmbeds = null;
         
 
@@ -118,6 +119,17 @@ namespace OpenUtau.Core.DiffSinger {
                 vocoder = new DsVocoder(dsConfig.vocoder);
             }
             return vocoder;
+        }
+
+        public DsPitch getPitchGenerator(){
+            if(pitchGenerator is null) {
+                if(File.Exists(Path.Join(Location, "dspitch", "dsconfig.yaml"))){
+                    pitchGenerator = new DsPitch(Path.Join(Location, "dspitch"));
+                    return pitchGenerator;
+                }
+                pitchGenerator = new DsPitch(Location);
+            }
+            return pitchGenerator;
         }
 
         public NDArray loadSpeakerEmbed(string speaker) {

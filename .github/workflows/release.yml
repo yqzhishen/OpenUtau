@@ -43,8 +43,8 @@ jobs:
       if: ${{ matrix.os.arch == 'win-x64' }}
       run: copy OpenUtau.Plugin.Builtin\bin\Release\netstandard2.1\OpenUtau.Plugin.Builtin.dll -Destination bin\${{ matrix.os.arch }}
     
-    - name: add openutau.plugins.builtin (macos)
-      if: ${{ matrix.os.arch == 'osx-x64' }}
+    - name: add openutau.plugins.builtin (macos and linux)
+      if: ${{ matrix.os.arch == 'osx-x64' || matrix.os.arch == 'linux-x64' }}
       run: cp OpenUtau.Plugin.Builtin/bin/Release/netstandard2.1/OpenUtau.Plugin.Builtin.dll bin/${{ matrix.os.arch }}
 
     #手动添加directml.dll的临时方案

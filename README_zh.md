@@ -24,5 +24,5 @@ OpenUtau For DiffSinger支持Windows和MacOS操作系统。请前往[Release页�
 ## 相关链接
 - [论文：https://arxiv.org/abs/2105.02446](https://arxiv.org/abs/2105.02446)
 - [DiffSinger（OpenVPI维护版）](https://github.com/openvpi/DiffSinger)
-- [DiffSinger中文文档](https://www.yuque.com/openvpi/tutorial)
+- [DiffSinger中文文档](https://openvpi-docs.feishu.cn/wiki/space/7251035979191140356?ccm_open_type=lark_wiki_spaceLink)
 - [OpenUtau官方仓库](https://github.com/stakira/OpenUtau)

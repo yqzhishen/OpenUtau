@@ -19,7 +19,7 @@ It's suggested to provide a full snapshot of your OpenUtau window, your ustx fil
 ## Links
 - [DiffSinger: Singing Voice Synthesis via Shallow Diffusion Mechanism](https://arxiv.org/abs/2105.02446)
 - [DiffSinger (maintained by OpenVPI)](https://github.com/openvpi/DiffSinger)
-- [DiffSinger Chinese Documentation](https://www.yuque.com/openvpi/tutorial)
+- [DiffSinger Chinese Documentation](https://openvpi-docs.feishu.cn/wiki/space/7251035979191140356?ccm_open_type=lark_wiki_spaceLink)
 - [OpenUtau official repo](https://github.com/stakira/OpenUtau)
 
 ---

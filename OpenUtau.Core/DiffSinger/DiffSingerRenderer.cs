@@ -19,6 +19,7 @@ namespace OpenUtau.Core.DiffSinger {
         const float headMs = DiffSingerUtils.headMs;
         const float tailMs = DiffSingerUtils.tailMs;
         const string VELC = DiffSingerUtils.VELC;
+        const string ENE = DiffSingerUtils.ENE;
         const string VoiceColorHeader = DiffSingerUtils.VoiceColorHeader;
 
         static readonly HashSet<string> supportedExp = new HashSet<string>(){
@@ -26,7 +27,9 @@ namespace OpenUtau.Core.DiffSinger {
             Format.Ustx.PITD,
             Format.Ustx.GENC,
             Format.Ustx.CLR,
+            Format.Ustx.BREC,
             VELC,
+            ENE,
         };
 
         static readonly object lockObj = new object();
@@ -153,39 +156,8 @@ namespace OpenUtau.Core.DiffSinger {
 
             //speaker
             if(singer.dsConfig.speakers != null) {
-                var speakers = singer.dsConfig.speakers;
-                var hiddenSize = singer.dsConfig.hiddenSize;
-                var speakerEmbeds = singer.getSpeakerEmbeds();
-                //get default speaker
-                var headDefaultSpk = speakers.IndexOf(phrase.phones[0].suffix);
-                var tailDefaultSpk = speakers.IndexOf(phrase.phones[^1].suffix);
-                var defaultSpkByFrame = Enumerable.Repeat(headDefaultSpk, headFrames).ToList(); 
-                defaultSpkByFrame.AddRange(Enumerable.Range(0, phrase.phones.Length)
-                    .SelectMany(phIndex => Enumerable.Repeat(speakers.IndexOf(phrase.phones[phIndex].suffix), durations[phIndex+1])));
-                defaultSpkByFrame.AddRange(Enumerable.Repeat(tailDefaultSpk, tailFrames));
-                //get speaker curves
-                NDArray spkCurves = np.zeros<float>(totalFrames, speakers.Count);
-                foreach(var curve in phrase.curves) {
-                    if(IsVoiceColorCurve(curve.Item1,out int subBankId) && subBankId < singer.Subbanks.Count) {
-                        var spkId = speakers.IndexOf(singer.Subbanks[subBankId].Suffix);
-                        spkCurves[":", spkId] = DiffSingerUtils.SampleCurve(phrase, curve.Item2, 0, 
-                            frameMs, totalFrames, headFrames, tailFrames, x => x * 0.01f)
-                            .Select(f => (float)f).ToArray();
-                    }
-                }
-                foreach(int frameId in Enumerable.Range(0,totalFrames)) {
-                    //standarization
-                    var spkSum = spkCurves[frameId, ":"].ToArray<float>().Sum();
-                    if (spkSum > 1) {
-                        spkCurves[frameId, ":"] /= spkSum;
-                    } else {
-                        spkCurves[frameId,defaultSpkByFrame[frameId]] += 1 - spkSum;
-                    }
-                }
-                var spkEmbedResult = np.dot(spkCurves, speakerEmbeds.T);
-                var spkEmbedTensor = new DenseTensor<float>(spkEmbedResult.ToArray<float>(), 
-                    new int[] { totalFrames, hiddenSize })
-                    .Reshape(new int[] { 1, totalFrames, hiddenSize });
+                var speakerEmbedManager = singer.getSpeakerEmbedManager();
+                var spkEmbedTensor = speakerEmbedManager.PhraseSpeakerEmbed(phrase, durations, frameMs, totalFrames, headFrames, tailFrames);
                 acousticInputs.Add(NamedOnnxValue.CreateFromTensor("spk_embed", spkEmbedTensor));
             }
             //gender
@@ -222,6 +194,36 @@ namespace OpenUtau.Core.DiffSinger {
                 acousticInputs.Add(NamedOnnxValue.CreateFromTensor("velocity", velocityTensor));
             }
 
+            //Variance: Energy and Breathiness
+            if(singer.dsConfig.useBreathinessEmbed || singer.dsConfig.useEnergyEmbed){
+                var varianceResult = singer.getVariancePredictor().Process(phrase);
+                //TODO: let user edit variance curves
+                if(singer.dsConfig.useEnergyEmbed){
+                    var energyCurve = phrase.curves.FirstOrDefault(curve => curve.Item1 == ENE);
+                    IEnumerable<double> userEnergy;
+                    if(energyCurve!=null){
+                        userEnergy = DiffSingerUtils.SampleCurve(phrase, energyCurve.Item2,
+                            0, frameMs, totalFrames, headFrames, tailFrames,
+                            x => x);
+                    } else{
+                        userEnergy = Enumerable.Repeat(0d, totalFrames);
+                    }
+                    var energy = varianceResult.energy.Zip(userEnergy, (x,y)=>(float)Math.Min(x + y*12/100, 0)).ToArray();
+                    acousticInputs.Add(NamedOnnxValue.CreateFromTensor("energy", 
+                        new DenseTensor<float>(energy, new int[] { energy.Length })
+                        .Reshape(new int[] { 1, energy.Length })));
+                }
+                if(singer.dsConfig.useBreathinessEmbed){
+                    var userBreathiness = DiffSingerUtils.SampleCurve(phrase, phrase.breathiness,
+                        0, frameMs, totalFrames, headFrames, tailFrames,
+                        x => x);
+                    var breathiness = varianceResult.breathiness.Zip(userBreathiness, (x,y)=>(float)Math.Min(x + y*12/100, 0)).ToArray();
+                    acousticInputs.Add(NamedOnnxValue.CreateFromTensor("breathiness", 
+                        new DenseTensor<float>(breathiness, new int[] { breathiness.Length })
+                        .Reshape(new int[] { 1, breathiness.Length })));
+                }
+            }
+
             Tensor<float> mel;
             var acousticOutputs = singer.getAcousticSession().Run(acousticInputs);
             mel = acousticOutputs.First().AsTensor<float>().Clone();
@@ -243,6 +245,7 @@ namespace OpenUtau.Core.DiffSinger {
 
         public UExpressionDescriptor[] GetSuggestedExpressions(USinger singer, URenderSettings renderSettings) {
             var result = new List<UExpressionDescriptor> {
+                //velocity
                 new UExpressionDescriptor{
                     name="velocity (curve)",
                     abbr=VELC,
@@ -251,8 +254,19 @@ namespace OpenUtau.Core.DiffSinger {
                     max=200,
                     defaultValue=100,
                     isFlag=false,
+                },
+                //energy
+                new UExpressionDescriptor{
+                    name="energy (curve)",
+                    abbr=ENE,
+                    type=UExpressionType.Curve,
+                    min=-100,
+                    max=100,
+                    defaultValue=0,
+                    isFlag=false,
                 }
             };
+            //speakers
             var dsSinger = singer as DiffSingerSinger;
             if(dsSinger!=null && dsSinger.dsConfig.speakers != null) {
                 result.AddRange(Enumerable.Zip(
@@ -268,6 +282,8 @@ namespace OpenUtau.Core.DiffSinger {
                         isFlag=false,
                     }));
             }
+            //energy
+
             return result.ToArray();
         }
 

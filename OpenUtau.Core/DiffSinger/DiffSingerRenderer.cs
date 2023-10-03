@@ -20,6 +20,7 @@ namespace OpenUtau.Core.DiffSinger {
         const float tailMs = DiffSingerUtils.tailMs;
         const string VELC = DiffSingerUtils.VELC;
         const string ENE = DiffSingerUtils.ENE;
+        const string PEXP = DiffSingerUtils.PEXP;
         const string VoiceColorHeader = DiffSingerUtils.VoiceColorHeader;
 
         static readonly HashSet<string> supportedExp = new HashSet<string>(){
@@ -30,6 +31,7 @@ namespace OpenUtau.Core.DiffSinger {
             Format.Ustx.BREC,
             VELC,
             ENE,
+            PEXP,
         };
 
         static readonly object lockObj = new object();
@@ -178,7 +180,7 @@ namespace OpenUtau.Core.DiffSinger {
             //speaker
             if(singer.dsConfig.speakers != null) {
                 var speakerEmbedManager = singer.getSpeakerEmbedManager();
-                var spkEmbedTensor = speakerEmbedManager.PhraseSpeakerEmbed(phrase, durations, frameMs, totalFrames, headFrames, tailFrames);
+                var spkEmbedTensor = speakerEmbedManager.PhraseSpeakerEmbedByFrame(phrase, durations, frameMs, totalFrames, headFrames, tailFrames);
                 acousticInputs.Add(NamedOnnxValue.CreateFromTensor("spk_embed", spkEmbedTensor));
             }
             //gender
@@ -285,7 +287,17 @@ namespace OpenUtau.Core.DiffSinger {
                     max=100,
                     defaultValue=0,
                     isFlag=false,
-                }
+                },
+                //expressiveness
+                new UExpressionDescriptor {
+                    name = "pitch expressiveness (curve)",
+                    abbr = PEXP,
+                    type = UExpressionType.Curve,
+                    min = 0,
+                    max = 100,
+                    defaultValue = 100,
+                    isFlag = false
+                },
             };
             //speakers
             var dsSinger = singer as DiffSingerSinger;

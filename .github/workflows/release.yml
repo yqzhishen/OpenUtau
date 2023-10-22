@@ -43,7 +43,9 @@ jobs:
 
     - name: extract directml
       if: ${{ matrix.os.arch == 'win-x64' }}
-      run: tar -xf Microsoft.AI.DirectML.nupkg -C Microsoft.AI.DirectML
+      run: |
+        mkdir Microsoft.AI.DirectML
+        tar -xf Microsoft.AI.DirectML.nupkg -C Microsoft.AI.DirectML
 
     - name: restore x64
       run: dotnet restore OpenUtau -r ${{ matrix.os.arch }}

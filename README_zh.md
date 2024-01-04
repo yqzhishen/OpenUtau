@@ -1,15 +1,16 @@
-# OpenUtau For DiffSinger
+
 [English](README.md) | **简体中文**
-
-适用于diffsinger的OpenUtau渲染器
-
-[DiffSinger](https://github.com/openvpi/DiffSinger)是一款基于机器学习技术的开源歌声合成引擎。任何人都可以录制自己的歌声，制作DiffSinger音源。本项目将DiffSinger接入开源的歌声合成前端编辑器[OpenUtau](https://github.com/stakira/OpenUtau)，以提供类似于Synthesizer V、X Studio等软件的编辑功能。
-
 ## 下载
-OpenUtau For DiffSinger支持Windows和MacOS操作系统。请前往[Release页面](https://github.com/xunmengshe/OpenUtau/releases)，根据你的操作系统下载合适的软件包。
+如果你已经安装了OpenUtau，则无需重新安装，只需下载[声码器](https://github.com/xunmengshe/OpenUtau/releases/0.0.0.0)，拖入OpenUtau窗口以导入。
 
-可以在以下网站找到适用于DiffSinger的音源：
-- [音源汇总表格](https://docs.qq.com/sheet/DQXNDY0pPaEpOc3JN?tab=BB08J2)
+Windows用户请前往[Release页面](https://github.com/xunmengshe/OpenUtau/releases)。下载文件名中带有“DiffSingerPack”的文件，解压。
+
+Mac用户请从[官方仓库](https://github.com/stakira/OpenUtau/releases)下载适用于你的操作系统的软件包，然后下载[声码器](https://github.com/xunmengshe/OpenUtau/releases/0.0.0.0)，拖入OpenUtau窗口以导入。
+
+## 关于本仓库的状态
+本仓库曾经是OpenUtau DiffSinger渲染器的开发仓库。现在DiffSinger渲染器已合并到[OpenUtau官方版本](https://github.com/stakira/openutau)。目前两个仓库是相同的代码库。
+
+本仓库将继续存在，并为Windows用户继续提供DiffSingerPack构建包。注意：此包与官方版本提供的功能相同，两者都支持DiffSinger音源和UTAU音源。唯一的区别是内置了声码器，无需另行下载。
 
 ## 使用方法
 [wiki/使用方法（中文）](https://github.com/xunmengshe/OpenUtau/wiki/%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95%EF%BC%88%E4%B8%AD%E6%96%87%EF%BC%89)

@@ -7,7 +7,7 @@ using K4os.Hash.xxHash;
 using Serilog;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-
+using Newtonsoft.Json;
 using OpenUtau.Api;
 using OpenUtau.Core.Render;
 using OpenUtau.Core.Util;
@@ -22,7 +22,8 @@ namespace OpenUtau.Core.DiffSinger{
     public class DsVariance : IDisposable{
         string rootPath;
         DsConfig dsConfig;
-        List<string> phonemes;
+        Dictionary<string, int> phonemes = new Dictionary<string, int>();
+        public Dictionary<string, int> languages = new Dictionary<string, int>();
         ulong linguisticHash;
         ulong varianceHash;
         InferenceSession linguisticModel;
@@ -40,9 +41,26 @@ namespace OpenUtau.Core.DiffSinger{
             dsConfig = Yaml.DefaultDeserializer.Deserialize<DsConfig>(
                 File.ReadAllText(Path.Combine(rootPath, "dsconfig.yaml"),
                     Encoding.UTF8));
-            //Load phonemes list
+            //Load phonemes map
             string phonemesPath = Path.Combine(rootPath, dsConfig.phonemes);
-            phonemes = File.ReadLines(phonemesPath, Encoding.UTF8).ToList();
+            if (phonemesPath.EndsWith(".json")) {
+                phonemes = JsonConvert.DeserializeObject<Dictionary<string, int>>(
+                    File.ReadAllText(phonemesPath)) ?? throw new InvalidDataException($"Failed to load phoneme mapping from {phonemesPath}");
+            } else {
+                var phonemeList = File.ReadLines(phonemesPath, Encoding.UTF8).ToList();
+                for (int idx = 0; idx < phonemeList.Count; ++idx) {
+                    if (string.IsNullOrWhiteSpace(phonemeList[idx])) continue;
+                    phonemes.Add(phonemeList[idx], idx);
+                }
+            }
+            //Load language map
+            string languagesPath = Path.Combine(rootPath, dsConfig.languages);
+            if (File.Exists(languagesPath)) {
+                var languageMap = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(languagesPath, Encoding.UTF8));
+                if (languageMap != null) {
+                    languages = languageMap;
+                }
+            }
             //Load models
             var linguisticModelPath = Path.Join(rootPath, dsConfig.linguistic);
             var linguisticModelBytes = File.ReadAllBytes(linguisticModelPath);
@@ -67,7 +85,7 @@ namespace OpenUtau.Core.DiffSinger{
             //SP and AP should always be vowel
             g2pBuilder.AddSymbol("SP", true);
             g2pBuilder.AddSymbol("AP", true);
-            return g2pBuilder.Build(); 
+            return g2pBuilder.Build();
         }
 
         public DiffSingerSpeakerEmbedManager getSpeakerEmbedManager(){
@@ -78,12 +96,21 @@ namespace OpenUtau.Core.DiffSinger{
         }
 
         int PhonemeTokenize(string phoneme){
-            int result = phonemes.IndexOf(phoneme);
-            if(result < 0){
+            if(!phonemes.TryGetValue(phoneme, out int result) || result < 0) {
                 throw new Exception($"Phoneme \"{phoneme}\" isn't supported by variance model. Please check {Path.Combine(rootPath, dsConfig.phonemes)}");
             }
             return result;
         }
+
+        public int LanguageTokenize(string phoneme) {
+            if (!phoneme.Contains('/')) return 0;
+            var language = phoneme.Split('/', 2)[0];
+            if(!languages.TryGetValue(language, out int result) || result < 0) {
+                throw new Exception($"Language \"{language}\" isn't supported by acoustic model. Please check {Path.Combine(rootPath, dsConfig.languages)}");
+            }
+            return result;
+        }
+
         public VarianceResult Process(RenderPhrase phrase){
             int headFrames = (int)Math.Round(headMs / frameMs);
             int tailFrames = (int)Math.Round(tailMs / frameMs);
@@ -94,6 +121,11 @@ namespace OpenUtau.Core.DiffSinger{
                 .Append("SP")
                 .Select(x => (Int64)PhonemeTokenize(x))
                 .ToArray();
+            var languages = phrase.phones.Select(p => p.phoneme)
+                .Prepend("SP")
+                .Append("SP")
+                .Select(x => (Int64)LanguageTokenize(x))
+                .ToArray();
             var ph_dur = phrase.phones
                 .Select(p => (int)Math.Round(p.endMs / frameMs) - (int)Math.Round(p.positionMs / frameMs))//prevent cumulative error
                 .Prepend(headFrames)
@@ -103,6 +135,11 @@ namespace OpenUtau.Core.DiffSinger{
             linguisticInputs.Add(NamedOnnxValue.CreateFromTensor("tokens",
                 new DenseTensor<Int64>(tokens, new int[] { tokens.Length }, false)
                 .Reshape(new int[] { 1, tokens.Length })));
+            if (dsConfig.useLangId) {
+                linguisticInputs.Add(NamedOnnxValue.CreateFromTensor("languages",
+                    new DenseTensor<Int64>(languages, new int[] { languages.Length }, false)
+                    .Reshape(new int[] { 1, languages.Length })));
+            }
             if(dsConfig.predict_dur){
                 //if predict_dur is true, use word encode mode
                 var vowelIds = Enumerable.Range(0,phrase.phones.Length)

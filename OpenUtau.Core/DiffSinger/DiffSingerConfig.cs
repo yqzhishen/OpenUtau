@@ -16,6 +16,8 @@ namespace OpenUtau.Core.DiffSinger {
     [Serializable]
     public class DsConfig {
         public string phonemes = "phonemes.txt";
+        public string languages = "languages.txt";
+        public bool useLangId = false;
         public string acoustic;
         public string vocoder;
         public List<string> speakers;

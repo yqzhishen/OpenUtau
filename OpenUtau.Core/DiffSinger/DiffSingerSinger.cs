@@ -8,6 +8,7 @@ using OpenUtau.Classic;
 using OpenUtau.Core.Ustx;
 using Serilog;
 using Microsoft.ML.OnnxRuntime;
+using Newtonsoft.Json;
 
 namespace OpenUtau.Core.DiffSinger {
     class DiffSingerSinger : USinger {
@@ -42,7 +43,8 @@ namespace OpenUtau.Core.DiffSinger {
         List<UOto> otos = new List<UOto>();
         Dictionary<string, UOto> otoMap = new Dictionary<string, UOto>();
 
-        public List<string> phonemes = new List<string>();
+        public Dictionary<string, int> phonemes = new Dictionary<string, int>();
+        public Dictionary<string, int> languages = new Dictionary<string, int>();
         public DsConfig dsConfig;
         public ulong acousticHash;
         public InferenceSession acousticSession = null;
@@ -90,20 +92,41 @@ namespace OpenUtau.Core.DiffSinger {
                 dsConfig = new DsConfig();
             }
 
-            //Load phoneme list
+            //Load phoneme map
             string phonemesPath = Path.Combine(Location, dsConfig.phonemes);
             if(phonemesPath != null && File.Exists(phonemesPath)){
                 try {
-                    phonemes = File.ReadLines(phonemesPath, TextFileEncoding).ToList();
+                    if (phonemesPath.EndsWith(".json")) {
+                        phonemes = JsonConvert.DeserializeObject<Dictionary<string, int>>(
+                            File.ReadAllText(phonemesPath, TextFileEncoding)) ?? throw new InvalidDataException($"Failed to load phoneme mapping from {phonemesPath}");
+                    } else {
+                        var phonemeList = File.ReadLines(phonemesPath, TextFileEncoding).ToList();
+                        for (int idx = 0; idx < phonemeList.Count; ++idx) {
+                            if (string.IsNullOrWhiteSpace(phonemeList[idx])) continue;
+                            phonemes.Add(phonemeList[idx], idx);
+                        }
+                    }
                 } catch (Exception e){
                     Log.Error(e, $"Failed to load phoneme list for {Name} from {phonemesPath}");
                 }
             } else {
                 Log.Error($"phonemes file not found for {Name} at {phonemesPath}");
             }
+            //Load language map
+            string languagesPath = Path.Combine(Location, dsConfig.languages);
+            if (languagesPath != null && File.Exists(languagesPath)) {
+                try {
+                    var languageMap = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(languagesPath, TextFileEncoding));
+                    if (languageMap != null) {
+                        languages = languageMap;
+                    }
+                } catch (Exception e) {
+                    Log.Error(e, $"Failed to load languages list for {Name} from {languagesPath}");
+                }
+            }
 
             var dummyOtoSet = new UOtoSet(new OtoSet(), Location);
-            foreach (var phone in phonemes) {
+            foreach (var phone in phonemes.Keys) {
                 var uOto = UOto.OfDummy(phone);
                 if (!otoMap.ContainsKey(uOto.Alias)) {
                     otos.Add(uOto);
@@ -119,7 +142,7 @@ namespace OpenUtau.Core.DiffSinger {
 
         public override bool TryGetOto(string phoneme, out UOto oto) {
             var parts = phoneme.Split();
-            if (parts.All(p => phonemes.Contains(p))) {
+            if (parts.All(p => phonemes.ContainsKey(p))) {
                 oto = UOto.OfDummy(phoneme);
                 return true;
             }
@@ -194,9 +217,17 @@ namespace OpenUtau.Core.DiffSinger {
         }
 
         public int PhonemeTokenize(string phoneme){
-            int result = phonemes.IndexOf(phoneme);
-            if(result < 0){
+            if(!phonemes.TryGetValue(phoneme, out int result) || result < 0) {
                 throw new Exception($"Phoneme \"{phoneme}\" isn't supported by acoustic model. Please check {Path.Combine(Location, dsConfig.phonemes)}");
+            }
+            return result;
+        }
+
+        public int LanguageTokenize(string phoneme) {
+            if (!phoneme.Contains('/')) return 0;
+            var language = phoneme.Split('/', 2)[0];
+            if(!languages.TryGetValue(language, out int result) || result < 0) {
+                throw new Exception($"Language \"{language}\" isn't supported by acoustic model. Please check {Path.Combine(Location, dsConfig.languages)}");
             }
             return result;
         }

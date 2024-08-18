@@ -210,6 +210,12 @@ namespace OpenUtau.Core.DiffSinger {
                 .Append("SP")
                 .Select(phoneme => (Int64)singer.PhonemeTokenize(phoneme))
                 .ToList();
+            var languages = phrase.phones
+                .Select(p => p.phoneme)
+                .Prepend("SP")
+                .Append("SP")
+                .Select(phoneme => (Int64)singer.LanguageTokenize(phoneme))
+                .ToList();
             var durations = phrase.phones
                 .Select(p => (int)Math.Round(p.endMs / frameMs) - (int)Math.Round(p.positionMs / frameMs))//prevent cumulative error
                 .Prepend(headFrames)
@@ -225,6 +231,11 @@ namespace OpenUtau.Core.DiffSinger {
             acousticInputs.Add(NamedOnnxValue.CreateFromTensor("tokens",
                 new DenseTensor<long>(tokens.ToArray(), new int[] { tokens.Count },false)
                 .Reshape(new int[] { 1, tokens.Count })));
+            if (singer.dsConfig.useLangId) {
+                acousticInputs.Add(NamedOnnxValue.CreateFromTensor("languages",
+                    new DenseTensor<long>(languages.ToArray(), new int[] { tokens.Count },false)
+                        .Reshape(new int[] { 1, tokens.Count })));
+            }
             acousticInputs.Add(NamedOnnxValue.CreateFromTensor("durations",
                 new DenseTensor<long>(durations.Select(x=>(long)x).ToArray(), new int[] { durations.Count }, false)
                 .Reshape(new int[] { 1, durations.Count })));
